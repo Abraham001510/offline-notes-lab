@@ -1,0 +1,17 @@
+{
+  "name": "Offline Notes Lab",
+  "short_name": "Notes Lab",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fbfaf7",
+  "theme_color": "#1d1d1b",
+  "description": "A beginner-friendly offline-first notes PWA.",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
