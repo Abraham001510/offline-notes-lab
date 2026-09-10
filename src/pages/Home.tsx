@@ -1,73 +1,209 @@
 import { useEffect, useMemo, useState } from "react";
 
-type Note = { id: number; title: string; body: string; updated: string };
+type Note = {
+  id: number;
+  title: string;
+  body: string;
+  updated: string;
+};
 
-const steps = ["Create the shell", "Make it installable", "Make it offline", "Test the boundary", "Deploy it"];
+const steps = [
+  "Create the shell",
+  "Make it installable",
+  "Make it offline",
+  "Test the boundary",
+  "Deploy it",
+];
 
 const starterNotes: Note[] = [
-  { id: 1, title: "What makes a PWA?", body: "A manifest, a service worker, and a reliable user experience.", updated: "Today" },
+  {
+    id: 1,
+    title: "What makes a PWA?",
+    body: "A manifest, a service worker, and a reliable user experience.",
+    updated: "Today",
+  },
 ];
 
 export default function Home() {
   const [notes, setNotes] = useState<Note[]>(() => {
-    try { return JSON.parse(localStorage.getItem("notes") || "null") || starterNotes; }
-    catch { return starterNotes; }
+    const saved = localStorage.getItem("offline-notes");
+
+    if (!saved) {
+      return starterNotes;
+    }
+
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return starterNotes;
+    }
   });
-  const [done, setDone] = useState<number[]>([]);
+
+  const [done, setDone] = useState<boolean[]>(
+    new Array(steps.length).fill(false)
+  );
+
   const [online, setOnline] = useState(navigator.onLine);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
 
-  const progress = useMemo(() => Math.round(done.length / steps.length * 100), [done]);
-
-  useEffect(() => { localStorage.setItem("notes", JSON.stringify(notes)); }, [notes]);
+  const progress = useMemo(() => {
+    const completed = done.filter(Boolean).length;
+    return Math.round((completed / steps.length) * 100);
+  }, [done]);
 
   useEffect(() => {
-    const on = () => setOnline(true); const off = () => setOnline(false);
-    window.addEventListener("online", on); window.addEventListener("offline", off);
-    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+    localStorage.setItem("offline-notes", JSON.stringify(notes));
+  }, [notes]);
+
+  useEffect(() => {
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
+  function toggleStep(index: number) {
+    setDone((current) =>
+      current.map((value, stepIndex) =>
+        stepIndex === index ? !value : value
+      )
+    );
+  }
+
   function addNote() {
-    if (!title.trim() || !body.trim()) return;
-    setNotes([{ id: Date.now(), title: title.trim(), body: body.trim(), updated: "Just now" }, ...notes]);
-    setTitle(""); setBody("");
+    if (!title.trim() || !body.trim()) {
+      return;
+    }
+
+    const newNote: Note = {
+      id: Date.now(),
+      title: title.trim(),
+      body: body.trim(),
+      updated: "Just now",
+    };
+
+    setNotes((current) => [newNote, ...current]);
+
+    setTitle("");
+    setBody("");
   }
 
   return (
-    <div className="shell">
-      <header><strong>Offline Notes Lab</strong><span>{online ? "Online" : "Offline"}</span></header>
-      <aside>
-        <p>WORKSHOP MAP</p>
-        {steps.map((step, index) => (
-          <button key={step} onClick={() => setDone(done.includes(index) ? done.filter((x) => x !== index) : [...done, index])}>
-            {done.includes(index) ? "✓ " : `${index + 1}. `}{step}
-          </button>
-        ))}
-        <small>{progress}% complete</small>
+    <main className="app-shell">
+      <aside className="sidebar">
+        <div>
+          <p className="eyebrow">PWA WORKSHOP</p>
+          <h1>Offline Notes Lab</h1>
+          <p className="sidebar-copy">
+            Build a small app that keeps working when the network disappears.
+            Project By: Otunubi Abraham Afolabi 
+            Matric Number: 2024/1/95584CP
+            Department: Computer Engineering 
+          </p>
+        </div>
+
+        <div className="progress-card">
+          <div className="progress-row">
+            <span>Progress</span>
+            <strong>{progress}%</strong>
+          </div>
+
+          <div className="progress-bar">
+            <div
+              className="progress-fill"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="steps">
+          {steps.map((step, index) => (
+            <button
+              key={step}
+              className={`step ${done[index] ? "done" : ""}`}
+              onClick={() => toggleStep(index)}
+            >
+              <span className="step-number">{index + 1}</span>
+              <span>{step}</span>
+            </button>
+          ))}
+        </div>
       </aside>
-      <main>
-        <p className="eyebrow">FOUNDATION TRACK</p>
-        <h1>Keep learning when the network leaves.</h1>
-        <p className="lede">Save a note, refresh the page, then test the same experience with the network turned off.</p>
-        <section className="columns">
-          <div>
-            <h2>Notes from the lab</h2>
+
+      <section className="content">
+        <header className="topbar">
+          <span className={`status ${online ? "online" : "offline"}`}>
+            <span className="status-dot" />
+            {online ? "Online" : "Offline"}
+          </span>
+        </header>
+
+        <div className="hero">
+          <p className="eyebrow">YOUR LOCAL-FIRST WORKSPACE</p>
+          <h2>Write it down. Keep it available.</h2>
+          <p>
+            Create notes, refresh the page, then test what happens when the
+            network disappears.
+          </p>
+        </div>
+
+        <div className="notes-layout">
+          <section className="notes-list">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">YOUR NOTES</p>
+                <h3>Saved locally</h3>
+              </div>
+
+              <span>{notes.length} notes</span>
+            </div>
+
             {notes.map((note) => (
-              <article key={note.id}>
-                <h3>{note.title}</h3>
+              <article className="note-card" key={note.id}>
+                <div className="note-meta">
+                  <span>{note.updated}</span>
+                </div>
+
+                <h4>{note.title}</h4>
                 <p>{note.body}</p>
-                <small>{note.updated}</small>
               </article>
             ))}
-          </div>
-          <form onSubmit={(event) => { event.preventDefault(); addNote(); }}>
-            <h2>Write a note</h2>
-            <label>Title<input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
-            <label>Observation<textarea value={body} onChange={(event) => setBody(event.target.value)} rows={5} /></label>
-            <button type="submit">Save locally</button></form>
-            </section>
-            </main>
-            </div>
+          </section>
+
+          <section className="write-card">
+            <p className="eyebrow">NEW NOTE</p>
+            <h3>Write something</h3>
+
+            <label htmlFor="title">Title</label>
+            <input
+              id="title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="A quick thought"
+            />
+
+            <label htmlFor="body">Note</label>
+            <textarea
+              id="body"
+              value={body}
+              onChange={(event) => setBody(event.target.value)}
+              placeholder="Write your note here..."
+              rows={7}
+            />
+
+            <button className="save-button" onClick={addNote}>
+              Save note
+            </button>
+          </section>
+        </div>
+      </section>
+    </main>
   );
 }
